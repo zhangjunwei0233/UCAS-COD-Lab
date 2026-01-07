@@ -1,0 +1,274 @@
+% 这是中国科学院大学计算机科学与技术专业《计算机组成原理（研讨课）》使用的实验报告 Latex 模板
+% 本模板与 2024 年 2 月 Jun-xiong Ji 完成, 更改自由 Shing-Ho Lin 和 Jun-Xiong Ji 于 2022 年 9 月共同完成的基础物理实验模板
+% 如有任何问题, 请联系: jijunxoing21@mails.ucas.ac.cn
+% This is the LaTeX template for report of Experiment of Computer Organization and Design courses, based on its provided Word template. 
+% This template is completed on Febrary 2024, based on the joint collabration of Shing-Ho Lin and Junxiong Ji in September 2022. 
+% Adding numerous pictures and equations leads to unsatisfying experience in Word. Therefore LaTeX is better. 
+% Feel free to contact me via: jijunxoing21@mails.ucas.ac.cn
+
+\documentclass[11pt]{article}
+
+\usepackage[a4paper]{geometry}
+\geometry{left=2.0cm,right=2.0cm,top=2.5cm,bottom=2.5cm}
+
+\usepackage{ctex} % 支持中文的LaTeX宏包
+\usepackage{amsmath,amsfonts,graphicx,subfigure,amssymb,bm,amsthm,mathrsfs,mathtools,breqn} % 数学公式和符号的宏包集合
+\usepackage{algorithm,algorithmicx} % 算法和伪代码
+\usepackage[noend]{algpseudocode} % 算法和伪代码
+\usepackage{fancyhdr} % 自定义页眉页脚
+\usepackage[framemethod=TikZ]{mdframed} % 创建带边框的框架
+\usepackage{fontspec} % 字体设置
+\usepackage{adjustbox} % 调整盒子大小
+\usepackage{fontsize} % 设置字体大小
+\usepackage{tikz,xcolor} % 绘制图形和使用颜色
+\usepackage{multicol} % 多栏排版
+\usepackage{multirow} % 表格中合并单元格
+\usepackage{pdfpages} % 插入PDF文件
+\usepackage{listings} % 在文档中插入源代码
+\usepackage{wrapfig} % 文字绕排图片
+\usepackage{bigstrut,multirow,rotating} % 支持在表格中使用特殊命令
+\usepackage{booktabs} % 创建美观的表格
+\usepackage{circuitikz} % 绘制电路图
+\usepackage{zhnumber} % 中文序号（用于标题）
+\usepackage{tabularx} % 表格折行
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{
+  frame=tb,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  framerule=1pt,
+  rulecolor=\color{gray!35},
+  backgroundcolor=\color{gray!5},
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3,
+}
+
+% 轻松引用, 可以用\cref{}指令直接引用, 自动加前缀. 
+% 例: 图片label为fig:1
+% \cref{fig:1} => Figure.1
+% \ref{fig:1}  => 1
+\usepackage[capitalize]{cleveref}
+% \crefname{section}{Sec.}{Secs.}
+\Crefname{section}{Section}{Sections}
+\Crefname{table}{Table}{Tables}
+\crefname{table}{Table.}{Tabs.}
+
+% \setmainfont{Palatino Linotype.ttf}
+% \setCJKmainfont{SimHei.ttf}
+% \setCJKsansfont{Songti.ttf}
+% \setCJKmonofont{SimSun.ttf}
+\punctstyle{kaiming}
+% 偏好的几个字体, 可以根据需要自行加入字体ttf文件并调用
+
+\renewcommand{\emph}[1]{\begin{kaishu}#1\end{kaishu}}
+
+% 对 section 等环境的序号使用中文
+\renewcommand \thesection{\zhnum{section}、}
+\renewcommand \thesubsection{\arabic{section}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%改这里可以修改实验报告表头的信息
+\newcommand{\name}{张钧玮}
+\newcommand{\studentNum}{2023K8009908003}
+\newcommand{\major}{计算机科学与技术}
+\newcommand{\labNum}{3}
+\newcommand{\labName}{定制MIPS功能型处理器设计——真实内存，外设与性能计数器访问}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\input{tex_file/head.tex}
+
+\section{逻辑电路结构与仿真波形的截图及说明}
+
+\noindent
+$\bullet$
+\textbf{FSM的状态转移设计}
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}[b]{0.3\linewidth}
+    \includegraphics[width=\linewidth]{fig/prj3/FSM_encoding.png}
+    \caption{FSM状态编码}
+    \label{fig:FSM_encoding}
+  \end{minipage}%
+  \hspace{5pt}
+  \begin{minipage}[b]{0.4\linewidth}
+    \includegraphics[width=\linewidth]{fig/prj3/FSM_section1.png}
+    \caption{FSM第一部分}
+    \label{fig:FSM_section1}
+  \end{minipage}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=11cm]{fig/prj3/FSM_section2.png}
+  \caption{FSM第二部分}
+  \label{fig:FSM_section2}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=12cm]{fig/prj3/FSM_section3.png}
+  \caption{FSM第三部分(之后的代码基本迁移自simple_cpu)}
+  \label{fig:FSM_section3}
+\end{figure}
+
+关键设计点说明：
+
+1.状态机的编码采用one-hot，并且通过三段式的方式描述。在第三段中所有的组合逻辑使用assign赋值，时序逻辑一个always块对一个寄存器赋值，并且赋值的条件互斥
+
+2.按照指令格式与指令类型设计译码逻辑，译码逻辑基本沿用simple\_cpu的设计：单独拉出信号线指示指令的类型，如\texttt{is_RType}，\texttt{is_JType}等等，避免了连接内部器件时额外产生信号判断电路
+
+\vspace{1ex}
+
+\noindent
+$\bullet$
+\textbf{puts函数设计}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=12cm]{fig/prj3/puts_function.png}
+  \caption{puts函数设计}
+\end{figure}
+
+关键设计点说明：
+
+1. 对于每一个字符，函数通过while循环等待uart的status段指示Tx\_FIFO非满，之后将其写入Tx\_FIFO的最低字节，直至字符串末尾。
+
+\noindent
+$\bullet$
+\textbf{性能计数器设计}
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}[b]{0.45\linewidth}
+    \includegraphics[width=\linewidth]{fig/prj3/perf1.png}
+  \end{minipage}%
+  \hspace{2pt}
+  \begin{minipage}[b]{0.45\linewidth}
+    \includegraphics[width=\linewidth]{fig/prj3/perf2.png}
+  \end{minipage}
+  \caption{perf的rtl设计}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=14cm]{fig/prj3/perf_print.png}
+  \caption{打印perf的代码设计}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=8cm]{fig/prj3/perf_result.png}
+  \caption{perf的输出结果}
+\end{figure}
+
+关键设计点说明：
+
+1. 记录总的时钟周期数和执行的指令数，由此可以计算CPI等重要参数
+
+2.单独记录涉及到内存访问的指令，并记录数据传输的延时。方便确定因器件之间数据传输而造成的延迟，以及定位其中的瓶颈。
+
+3.记录分支跳转指令的数量，由于确定分支预测等机制在该bench中的重要性。在实现分支预测机制之后，还可以记录分支预测的命中率，方便优化预测逻辑
+
+\section{实验过程中遇到的问题、对问题的思考过程及解决方法}
+
+\noindent
+$\bullet$
+\textbf{RTL代码设计问题}。
+
+\noindent
+1. \textbf{输入信号寄存的问题}
+
+在内存向CPU传送数据的时候，一旦达成handshake，内存便不一定会继续保存传出的数据不变。这时需要CPU中自行设置寄存器保存读到的数据。
+
+我一开始设置了指令的寄存器instReg，但是忘记了设置数据寄存器ReadDataReg，导致仿真报错。添加后即通过测试。
+
+\noindent
+2. \textbf{PC更新的时机问题}
+
+一开始，我将pcReg的更新时机设置到了ID阶段之后，因为这是在nextPc产生之后唯一一个所有指令都需要通过的时刻(nop指令在nextPc产生之后直接进入IF阶段，不经过EX等其他阶段)。但是这样产生了问题：有一些指令在WB阶段需要向寄存器写入PC相关的值，如果PC在ID阶段之后就已经更新，则写入的值也会发生对应的更新，从而导致写入错误的结果。
+
+解决这个问题，有两个方向：一是调整pcReg的更新时机，二是在电路中增加额外的寄存器，保存nextPc的值。但是如果才有后者，新增加的寄存器同样会面临更新时机的问题。因此，为了简便起见，我调整了pcReg的更新时机，保证在如上的情况中pcReg在WB阶段之后再更新，从而解决了问题。
+
+\noindent
+3. \textbf{复位信号设置问题}
+
+我在一开始忘记设置PC的复位信号。在仿真阶段并未保存，但是在FPGA运行时报错。添加PC的复位信号后即通过了FPGA测试
+
+\noindent
+4. \textbf{其他指令实现细节问题}
+
+
+\textbf{a).} R\_MType指令的RF\_wen信号控制问题：
+
+R\_MType指令的RF\_Wen信号不是简单的0或者1，而是要根据src2来确定。最开始从simple\_cpu迁移代码时疏漏了这一部分。补全为|src2 \^ ~func[0]后即通过了测试。
+
+\textbf{b).} bgez指令中ALU操作数的设置问题：
+
+begz指令的一个ALU操作数需要设置为-1，在开始时误打成了32'h11111111。修改为32'hfffffff后即通过测试。
+
+
+\vspace{1ex}
+
+\noindent
+$\bullet$
+\textbf{uart驱动软件设计问题}。
+
+讲义中给出的偏移量按照字节编址，而代码中的指针是\texttt{unsigned long *}型指针，默认的缩放系数是4字节。
+
+在开始时，我没有注意到这一差异，因此写下\texttt{uart[UART_STATUS]}样的代码，计算产生了错误的偏移量，导致并没有访问到status段，代码在运行时卡死。
+
+将上面的代码修改为\texttt{uart[UART_STATUS/4]}后即可产生正确的偏移量，且表达式求值的结果为\texttt{unsigned long}型。在后面需要写入字符的时候，由于待写入的字符是1字节，所以此时需将\texttt{uart}指针解释为\texttt{volatile char *}型，此时需要使用字节编址的偏移量，所以不需要除4修正。即\texttt{((volatile char *)uart)[UART_TX_FIFO]}
+
+\noindent
+$\bullet$
+\textbf{FPGA加速仿真调试的使用情况}。
+
+我在第一次FPGA运行的时候出现了报错，所以使用了FPGA加速仿真，但是它并没有帮我调试出bug。因为我报错的原因是忘记了设置PC的reset值。在verilator仿真阶段，可能由于并未采用随机值初始化，导致我正常通过了所有的仿真。
+
+在尝试使用FPGA加速仿真调试的时候，它在程序的中间停止，且停止位置的指令实现并没有错误。不知道是什么原因，貌似FPGA仿真加速并不能很好的识别初始化阶段的错误。
+
+建议在verilator仿真阶段加入随机初始化机制，以便我们更好地发现初始化信号设置的错误。
+
+\section{对讲义中思考题（如有）的理解和回答}
+
+1. \textbf{uart驱动程序中的volatile关键字的含义是什么？如果去掉会出现什么后果？}
+
+volatile关键字的作用是声明一个变量有可能被程序的外部环境修改，从而弃用编译器优化的缓存等机制。
+
+C语言编译的时候有一个假设：一段内存假如不被程序主动访问，那么它的值是保持不变的。编译器可以利用这个假设进行优化，如直接把这段内存地址附近的数据一次读入缓存或寄存器，在之后执行程序的时候不访问真实的地址，而直接访问缓存或寄存器。
+
+但是设备寄存器是随时有可能变化的，如上的优化都有可能导致真实的设备输入无法被读取。
+
+\section{收获与感想}
+
+首先，在数字电路课程中学习的FSM三段式写法得到了充分实践，通过重构状态机模块并优化状态跳转逻辑，进一步掌握了三段式状态机结构清晰、易于维护的优势。
+
+其次，在多周期CPU设计中，通过划分取指、译码、执行等基本状态，理解了状态机如何驱动数据路径的时序控制，这让我对CPU工作原理有了更直观的认识。
+
+调试过程中，RTL设计与波形分析的结合极大锻炼了我的问题定位能力。尤其在寄存器写入异常时，由于缺乏完善的检查机制，调试效率一度受限，这让我意识到完善的基础设施的重要性。
+
+此外，软件层面通过驱动程序与硬件交互的实践，使我初步理解了软硬件协同设计中数据交换的底层机制。
+
+\section{实验所耗时间}
+
+\newcommand{\labTime}{9} % 请在这里填写实验所耗时间（单位：小时）
+
+在课后，你花费了大约\underline{\makebox[5em][c]{\labTime}}小时完成此次实验。
+
+\end{document}

@@ -1,0 +1,363 @@
+% 这是中国科学院大学计算机科学与技术专业《计算机组成原理（研讨课）》使用的实验报告 Latex 模板
+% 本模板与 2024 年 2 月 Jun-xiong Ji 完成, 更改自由 Shing-Ho Lin 和 Jun-Xiong Ji 于 2022 年 9 月共同完成的基础物理实验模板
+% 如有任何问题, 请联系: jijunxoing21@mails.ucas.ac.cn
+% This is the LaTeX template for report of Experiment of Computer Organization and Design courses, based on its provided Word template. 
+% This template is completed on Febrary 2024, based on the joint collabration of Shing-Ho Lin and Junxiong Ji in September 2022. 
+% Adding numerous pictures and equations leads to unsatisfying experience in Word. Therefore LaTeX is better. 
+% Feel free to contact me via: jijunxoing21@mails.ucas.ac.cn
+
+\documentclass[11pt]{article}
+
+\usepackage[a4paper]{geometry}
+\geometry{left=2.0cm,right=2.0cm,top=2.5cm,bottom=2.5cm}
+
+\usepackage{ctex} % 支持中文的LaTeX宏包
+\usepackage{amsmath,amsfonts,graphicx,subfigure,amssymb,bm,amsthm,mathrsfs,mathtools,breqn} % 数学公式和符号的宏包集合
+\usepackage{algorithm,algorithmicx} % 算法和伪代码
+\usepackage[noend]{algpseudocode} % 算法和伪代码
+\usepackage{fancyhdr} % 自定义页眉页脚
+\usepackage[framemethod=TikZ]{mdframed} % 创建带边框的框架
+\usepackage{fontspec} % 字体设置
+\usepackage{adjustbox} % 调整盒子大小
+\usepackage{fontsize} % 设置字体大小
+\usepackage{tikz,xcolor} % 绘制图形和使用颜色
+\usepackage{multicol} % 多栏排版
+\usepackage{multirow} % 表格中合并单元格
+\usepackage{pdfpages} % 插入PDF文件
+\usepackage{listings} % 在文档中插入源代码
+\usepackage{wrapfig} % 文字绕排图片
+\usepackage{bigstrut,multirow,rotating} % 支持在表格中使用特殊命令
+\usepackage{booktabs} % 创建美观的表格
+\usepackage{circuitikz} % 绘制电路图
+\usepackage{zhnumber} % 中文序号（用于标题）
+\usepackage{tabularx} % 表格折行
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{
+  frame=tb,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  framerule=1pt,
+  rulecolor=\color{gray!35},
+  backgroundcolor=\color{gray!5},
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3,
+}
+
+% 轻松引用, 可以用\cref{}指令直接引用, 自动加前缀. 
+% 例: 图片label为fig:1
+% \cref{fig:1} => Figure.1
+% \ref{fig:1}  => 1
+\usepackage[capitalize]{cleveref}
+% \crefname{section}{Sec.}{Secs.}
+\Crefname{section}{Section}{Sections}
+\Crefname{table}{Table}{Tables}
+\crefname{table}{Table.}{Tabs.}
+
+% \setmainfont{Palatino Linotype.ttf}
+% \setCJKmainfont{SimHei.ttf}
+% \setCJKsansfont{Songti.ttf}
+% \setCJKmonofont{SimSun.ttf}
+\punctstyle{kaiming}
+% 偏好的几个字体, 可以根据需要自行加入字体ttf文件并调用
+
+\renewcommand{\emph}[1]{\begin{kaishu}#1\end{kaishu}}
+
+% 对 section 等环境的序号使用中文
+\renewcommand \thesection{\zhnum{section}、}
+\renewcommand \thesubsection{\arabic{section}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%改这里可以修改实验报告表头的信息
+\newcommand{\name}{张钧玮}
+\newcommand{\studentNum}{2023K8009908003}
+\newcommand{\major}{计算机科学与技术}
+\newcommand{\labNum}{5.2}
+\newcommand{\labName}{高速缓存(Cache)设计}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\input{tex_file/head.tex}
+
+\section{icache的逻辑电路结构与仿真波形的截图及说明}
+
+\noindent
+$\bullet$
+\textbf{电路结构与工作原理}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/icache_structure.png}
+  \caption{icache电路结构图(只画出一路)}
+  \label{fig:icache_structure}
+\end{figure}
+
+\noindent
+关键设计点说明：
+
+指令缓存采用4路-组相连设计，共有四路(Way)，每一路八个集合(Set)，每一个集合存放一个相邻的数据块(Block)，大小为8字(word)，每个字长4字节。
+
+接收到CPU的访存地址之后，cache将地址拆分为三部分：Tag, Index, Offset。
+
+1. Offset: 从一个Block中选择出一个word
+
+2. Index：每一个index对应一个Set
+
+3. Tag：根据Tag从同一个Set中的各个Way中判断数据命中情况
+
+cache表现出的行为为：根据CPU首先找出4Way中Index像对应的Set，这会选中4个Block。然后判断有无Tag与请求Tag相同的Block。若有，则缓存命中，根据Offest从该Block中选中对应的word返回；若没有，则缓存未命中，此时需要从这四个Block中选中一个替换，然后再按命中的逻辑选择并返回word。
+
+
+\vspace{1ex}
+
+\noindent
+$\bullet$
+\textbf{替换策略选择}
+
+\noindent
+关键设计点说明：
+
+有很多可选择的替换策略：
+
+1. 随机替换：适用于内存读写位置随机的系统（即不满足\textbf{局部性原理}）
+
+2. 最近最少使用(LRU)：维护每个Set中最早一个被使用的一个Block，需要时替换该Block（符合\textbf{局部性原理}）
+
+3. 最不常用(LFU)：维护每个Set中每个Block的命中次数，需要时替换次数最小的Block。（在实际应用中效率低，较少使用）
+
+4. 最近最多使用(MRU)：维护每个Set中最近一个被使用的一个Block，需要时替换该Block（适用于旧数据会被新数据更多访问的系统）
+
+这里，由于CPU的L1指令缓存满足局部性原理，因此使用LRU算法较为合适。但是由于完整地记录最早被使用的Block需要较多资源，所以我采用了\textbf{使用二叉树近似的伪LRU算法}：
+
+每一个Set有4路Block，维护一个二叉树，用于记录最近一次被使用的Block的路径（0节点表示向左走，1节点表示向右走）。每次访存，更新被访问的Block的路径到二叉树中。当需要替换的时候，按照相反的方向走（0向右，1向左），即可找到近似的最近最少使用Block。
+
+\noindent
+$\bullet$
+\textbf{核心代码实现}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=8cm]{fig/prj5.2/icache_FSM.png}
+  \caption{icache状态转移代码}
+  \label{fig:icache_FSM}
+\end{figure}
+
+按照讲义的状态转移图编写，不做过多解释。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/icache_body.png}
+  \caption{icache主体代码}
+  \label{fig:icache_body}
+\end{figure}
+
+WAIT阶段等待CPU的ready信号拉高，并将请求地址保存进寄存器中
+
+TAG\_RD阶段判断CPU请求是否命中
+
+若未命中，则向内存发送读请求，并将Burst传输得到的Block存放入寄存器中，进而写入cache中的替换目标Block，最后回应CPU请求
+
+若命中，直接读出数据并回应CPU请求
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/icache_evict.png}
+  \caption{icache替换算法代码}
+  \label{fig:icache_evict}
+\end{figure}
+
+为每一个Set设置一个三位的二叉树LRU[2:0]。初始化为000，之后每次访存都需要跟新树的路径。从LRU可以时时产生leastUsedWay信号。
+
+替换时，如果有空闲block，则evictWay有限设置为firstEmptyWay，否则设置为leastUsedWay
+
+\section{dcache的逻辑电路结构与仿真波形的截图及说明}
+
+\noindent
+$\bullet$
+\textbf{状态转移设计}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/dcache_design.png}
+  \caption{dcache状态转移图}
+  \label{fig:dcache_design}
+\end{figure}
+
+图中，绿色为缓存命中情况，红色为未命中情况，黄色为数据旁路。
+
+数据缓存的写命中策略选择Write-back而不是直接写入内存，写缺失策略选择Write-allocate对写地址附近的数据进行缓存。这两种策略通常结合使用，用于处理CPU运行时的有大量内存区域可缓存，且满足局部性原理的情况。
+
+数据缓存的核心结构和替换算法与指令缓存类似，不多赘述。
+
+\noindent
+$\bullet$
+\textbf{核心代码实现}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/dcache_wait.png}
+  \caption{dcache等待CPU请求}
+\end{figure}
+
+等待接受CPU请求，将接收到的请求存入寄存器。
+
+需要注意，如果CPU发送旁路的写请求，说明写入地址不可缓存，因此需要等待数据真正写入内存中后再拉高ready信号。对于其他情况，可以直接拉高ready信号。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/icache_tagrd.png}
+  \caption{dcache检查CPU请求命中情况}
+\end{figure}
+
+分析CPU请求，具体包括：是读还是写，是否触发旁路，缓存是否命中。并根据结果确定下一状态
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/dcache_rdcch.png}
+  \caption{dcache读取命中数据}
+\end{figure}
+
+若读请求缓存命中，则生成命中数据
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/dcache_rsp.png}
+  \caption{dcache回应CPU请求}
+\end{figure}
+
+回应CPU的读请求，需要处理缓存和旁路两种情况
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/dcache_eviction.png}
+  \caption{dcache数据替换}
+\end{figure}
+
+在内存写请求命中时，需要将缓存中的数据读出，写入CPU请求数据后重新写回缓存
+
+在缓存未命中时，需要将从内存中读出的请求地址附近的数据（如果是写请求，还需要进行写入）写入替换目标Block
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/dcache_memwreq.png}
+  \caption{dcache发送memWrite请求}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/dcache_memrreq.png}
+  \caption{dcache发送memRead请求}
+\end{figure}
+
+在缓存未命中或者触发旁路的情况下，缓存需要向内存发送读写请求，并根据这两种情况的不同设置对应的len信号
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/dcache_memwrsp.png}
+  \caption{dcache发送内存写数据}
+\end{figure}
+
+缓存在发送内存写请求后，需要用Burst传输的方式向内存传递写数据。
+
+使用一个Shifter控制Burst数据的传输与last信号的产生。根据旁路与内存两种情况设置shifter的对应位位1，之后每传送一个word右移一位，直至最低位为1时产生last信号结束传输。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/dcache_memrrsp.png}
+  \caption{dcache接受内存读数据}
+\end{figure}
+
+缓存在发送内存写请求后，用Burst传输的方式接受内存数据并存入寄存器。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj5.2/dcache_evict.png}
+  \caption{dcache替换算法}
+\end{figure}
+
+与指令缓存类似，不多赘述。
+
+\section{cache的性能分析（CPU为多周期CPU，还未实现流水线）}
+
+\noindent
+$\bullet$
+\textbf{microbench性能分析}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{fig/prj5.2/perf_analysis.png}
+  \caption{microbench性能分析(单位: ms)}
+\end{figure}
+
+从图中可以看出，在实现icache之后，所有的microbench(除了Eratosthenes sieve)均得到了大幅度的提升，很多提升甚至达到数量级级别。这是因为所有的指令都需要取指这一环节，icache优化了取指时间，故而对所有的testbench都带来了提升
+
+在icache的基础上进一步实现dcache之后，发现访存指令占比较高的micorbench(如Dinic)得到了明显的提升，而访存指令较少的microbench(如Fibonacci)提升较为有限。总体而言，dcache带来了很好的性能提升
+
+\noindent
+$\bullet$
+\textbf{turbo_eval性能分析}
+
+1. 无cache情况：CoreMark得分84376120, Dhrystone得分483
+
+2. 实现icache之后：CoreMark得分8528206, Dhrystone得分3371
+
+3. 进一步实现dcache之后：CoreMark得分8318327, Dhrystone得分4657
+
+由此可见，最初时icache为瓶颈。实现icache之后跑分得到了数量级的提升。然而在进一步实现dcache之后跑分的提升却比较有限，推测此时的瓶颈并不在dcache，有可能在流水线或者其他部分。
+
+\noindent
+$\bullet$
+\textbf{dcache替换策略选择}
+
+一开始时沿用icache的策略，选择优先替换空Block，之后替换最近最少使用Block。但是在测试时想到dcache比icache多了一个dirty信息，是否可以用其进行性能优化。
+
+为此，考虑将替换策略修改为：优先替换空Block，之后替换非Dirty的Block(因为此时替换不需要内存写回(Write back))，最后选择最近最少使用Block
+
+这样做虽然减小了写回用时，但是也会造成额外的开销：非Dirty的Block虽然没有被写入数据，但是有可能被频繁的读取。如果每次替换都将其替换掉，则会造成Dirty Block在Cache中堆积，产生很多的Miss。事实证明却是如此，替换为此策略之后跑分均有所下降，故最后修改回了最初的策略。
+
+\section{实验过程中遇到的问题、对问题的思考过程及解决方法}
+
+\noindent
+$\bullet$
+\textbf{RTL设计问题}。
+
+在第一次实现dcache的时候，我在WAIT阶段就将ready信号统一拉高，但发现运行测试用例的时在程序的最后一条指令处报错，通过查看反汇编结果发现程序执行了trap中的指令，而golden CPU并没有落入trap中而是直接返回，导致了CPU行为不一致。
+
+这是因为程序在trap之前的最后一条指令是通过旁路向内存中写入数据触发系统调用，但是在原先的cache实现中，CPU发送写请求后握手后就继续执行接下来的指令，但是此时cache仅仅接收到旁路写请求，还没有真正写入数据。
+
+因此，需要修改旁路写的ready信号。当cache接收到旁路写请求的时候，不直接拉高ready信号，而是等待真正把数据接入内存之后，再拉高ready信号。
+
+
+\section{对讲义中思考题（如有）的理解和回答}
+
+
+本次实验没有思考题
+
+\section{收获与感想}
+
+通过本次高速缓存设计实验，我对计算机存储体系的核心机制有了更深入的理解。在实现指令缓存（icache）时，采用4路组相连结构配合二叉树近似的伪LRU替换算法，验证了组相连映射在空间利用率与访问延迟间的平衡优势。
+
+此外，我通过实现Write-back写回和Write-allocate写分配策略，理解了缓存一致性的维护机制。特别在旁路写入（bypass）场景中，发现必须确保数据真正写入内存后才能响应CPU的ready信号，否则会导致后续指令错误执行。此问题的解决过程强化了对存储器时序安全性的认识。
+
+在调试过程中，通过波形分析验证了状态机的正确跳转：如TAG\_RD阶段的命中判断、EVICTION阶段的脏块回写、MEM\_WRSP阶段的burst传输控制等关键节点。这提升了使用Verilog进行复杂状态机设计的能力，并体会到缓存性能对整体系统的影响——合理的块大小（8字）和路数（4路）选择可显著提升局部性访问效率。
+
+\section{实验所耗时间}
+
+\newcommand{\labTime}{12} % 请在这里填写实验所耗时间（单位：小时）
+
+在课后，你花费了大约\underline{\makebox[5em][c]{\labTime}}小时完成此次实验。
+
+\end{document}

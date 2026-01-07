@@ -1,0 +1,609 @@
+% 这是中国科学院大学计算机科学与技术专业《计算机组成原理（研讨课）》使用的实验报告 Latex 模板
+% 本模板与 2024 年 2 月 Jun-xiong Ji 完成, 更改自由 Shing-Ho Lin 和 Jun-Xiong Ji 于 2022 年 9 月共同完成的基础物理实验模板
+% 如有任何问题, 请联系: jijunxoing21@mails.ucas.ac.cn
+% This is the LaTeX template for report of Experiment of Computer Organization and Design courses, based on its provided Word template. 
+% This template is completed on Febrary 2024, based on the joint collabration of Shing-Ho Lin and Junxiong Ji in September 2022. 
+% Adding numerous pictures and equations leads to unsatisfying experience in Word. Therefore LaTeX is better. 
+% Feel free to contact me via: jijunxoing21@mails.ucas.ac.cn
+
+\documentclass[11pt]{article}
+
+\usepackage[a4paper]{geometry}
+\geometry{left=2.0cm,right=2.0cm,top=2.5cm,bottom=2.5cm}
+
+\usepackage{ctex} % 支持中文的LaTeX宏包
+\usepackage{amsmath,amsfonts,graphicx,subfigure,amssymb,bm,amsthm,mathrsfs,mathtools,breqn} % 数学公式和符号的宏包集合
+\usepackage{algorithm,algorithmicx} % 算法和伪代码
+\usepackage[noend]{algpseudocode} % 算法和伪代码
+\usepackage{fancyhdr} % 自定义页眉页脚
+\usepackage[framemethod=TikZ]{mdframed} % 创建带边框的框架
+\usepackage{fontspec} % 字体设置
+\usepackage{adjustbox} % 调整盒子大小
+\usepackage{fontsize} % 设置字体大小
+\usepackage{tikz,xcolor} % 绘制图形和使用颜色
+\usepackage{multicol} % 多栏排版
+\usepackage{multirow} % 表格中合并单元格
+\usepackage{pdfpages} % 插入PDF文件
+\usepackage{listings} % 在文档中插入源代码
+\usepackage{wrapfig} % 文字绕排图片
+\usepackage{bigstrut,multirow,rotating} % 支持在表格中使用特殊命令
+\usepackage{booktabs} % 创建美观的表格
+\usepackage{circuitikz} % 绘制电路图
+\usepackage{zhnumber} % 中文序号（用于标题）
+\usepackage{tabularx} % 表格折行
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{
+  frame=tb,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  framerule=1pt,
+  rulecolor=\color{gray!35},
+  backgroundcolor=\color{gray!5},
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3,
+}
+
+% 轻松引用, 可以用\cref{}指令直接引用, 自动加前缀. 
+% 例: 图片label为fig:1
+% \cref{fig:1} => Figure.1
+% \ref{fig:1}  => 1
+\usepackage[capitalize]{cleveref}
+% \crefname{section}{Sec.}{Secs.}
+\Crefname{section}{Section}{Sections}
+\Crefname{table}{Table}{Tables}
+\crefname{table}{Table.}{Tabs.}
+
+% \setmainfont{Palatino Linotype.ttf}
+% \setCJKmainfont{SimHei.ttf}
+% \setCJKsansfont{Songti.ttf}
+% \setCJKmonofont{SimSun.ttf}
+\punctstyle{kaiming}
+% 偏好的几个字体, 可以根据需要自行加入字体ttf文件并调用
+
+\renewcommand{\emph}[1]{\begin{kaishu}#1\end{kaishu}}
+
+% 对 section 等环境的序号使用中文
+\renewcommand \thesection{\zhnum{section}、}
+\renewcommand \thesubsection{\arabic{section}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%改这里可以修改实验报告表头的信息
+\newcommand{\name}{张钧玮}
+\newcommand{\studentNum}{2023K8009908003}
+\newcommand{\major}{计算机科学与技术}
+\newcommand{\labNum}{5.3}
+\newcommand{\labName}{深度学习算法与硬件加速器}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\input{tex_file/head.tex}
+
+\section{支持RISCV乘法指令的硬件设计}
+
+\noindent
+$\bullet$
+\textbf{booth算法的乘法运算单元设计}
+
+% \begin{figure}[H]
+%   \centering
+%   \begin{minipage}[b]{0.3\linewidth}
+%     \includegraphics[width=\linewidth]{fig/prj3/FSM_encoding.png}
+%     \caption{FSM状态编码}
+%     \label{fig:FSM_encoding}
+%   \end{minipage}%
+%   \hspace{5pt}
+%   \begin{minipage}[b]{0.4\linewidth}
+%     \includegraphics[width=\linewidth]{fig/prj3/FSM_section1.png}
+%     \caption{FSM第一部分}
+%     \label{fig:FSM_section1}
+%   \end{minipage}
+% \end{figure}
+
+\begin{lstlisting}[language=Verilog] % 指定语言
+module mul(
+	input         clk,
+	input         rst,
+	input  [31:0] a,
+	input  [31:0] b,
+	input         valid,
+	output        ready,
+	output [63:0] result
+);
+
+localparam WAIT  = 4'b0001,
+           ADD   = 4'b0010, // from Q_n and Q_{n+1} generate X or X comp to ADDER, then generate result
+           SHIFT = 4'b0100, // shift AQ right one bit
+           RSP   = 4'b1000;
+
+reg [3:0] currentState, nextState;
+
+reg  [65:0] AQ;
+reg  [32:0] X;
+wire [32:0] X_cmp;
+reg  [ 4:0] cnt;
+wire [32:0] addNum;
+
+always @(posedge clk) begin
+	if (rst)
+		currentState <= WAIT;
+	else
+		currentState <= nextState;
+end
+
+always @(*) begin
+	case (currentState)
+		WAIT: begin
+			if (valid)
+				nextState = ADD;
+			else
+				nextState = WAIT;
+		end
+		ADD: begin
+			if (cnt == 5'b0)
+				nextState = RSP;
+			else
+				nextState = SHIFT;
+		end
+		SHIFT: begin
+			nextState = ADD;
+		end
+		RSP: begin
+			nextState = WAIT;
+		end
+		default: nextState = WAIT;
+	endcase
+end
+
+/* assign registers */
+always @(posedge clk) begin
+	if (rst)
+		X <= 33'b0;
+	else if (currentState == WAIT)
+		X <= {a[31], a}; // two sign bits
+	else
+		X <= X;
+end
+
+always @(posedge clk) begin
+	if (rst)
+		AQ <= 66'b0;
+	else if (currentState ==  WAIT)
+		AQ <= {33'd0, b, 1'b0}; // append 0 at the end
+	else if (currentState == ADD)
+		AQ <= {(AQ[65:33] + addNum), AQ[32:0]}; // add
+	else if (currentState == SHIFT)
+		AQ <= {AQ[65], AQ[65:1]}; // shift right
+	else
+		AQ <= AQ;
+end
+
+always @(posedge clk) begin
+	if (rst)
+		cnt <= 5'b0;
+	else if (currentState == WAIT)
+		cnt <= 5'd31;
+	else if (currentState == ADD)
+		cnt <= cnt - 1'b1;
+	else
+		cnt <= cnt;
+end
+
+assign X_cmp = ~X + 33'b1;
+
+/* ADD state */
+assign addNum = (~AQ[1] &  AQ[0]) ? X     :
+                ( AQ[1] & ~AQ[0]) ? X_cmp : 33'b0;
+
+/* RSP state */
+assign ready = (currentState == RSP) ? 1'b1 : 1'b0;
+assign result = AQ[65:2];
+
+endmodule
+\end{lstlisting}
+
+\noindent
+关键设计点说明：
+
+乘法计算单元采用booth补码乘法算法，有4个状态：
+
+$\bullet$ WAIT：等待输入valid信号拉高，并将输入的a和b存入寄存器。同时初始化counter为31，A置0，Q置b（AQ长66位，因为被乘数采用两位符号位防止溢出，同时在Q的末尾补零方便booth算法第一步计算）。接着跳转到ADD
+
+$\bullet$ ADD：根据AQ的最后两位产生控制信号，将a或-a或0加到A上；之后将counter减一。若counter等于0，则下一步跳转到RSP，否则跳转到SHIFT
+
+$\bullet$ SHIFT：AQ整体算数右移一位，接着跳转回ADD
+
+$\bullet$ RSP：拉高ready信号返回计算结果，之后进入WAIT状态等待下一请求
+
+这样保证对于每个32位输入，运行32次加法，31次移位运算（最后一次加法后不移位），从而得到正确的乘法结果
+
+
+\noindent
+$\bullet$
+\textbf{custom_cpu中的修改}
+
+增加MUL状态编码与状态转移：
+
+\begin{lstlisting}[language=Verilog]
+    /* define states */
+	localparam INIT = 10'b0000000001,
+	           IF   = 10'b0000000010,
+	           IW   = 10'b0000000100,
+	           ID   = 10'b0000001000,
+	           EX   = 10'b0000010000,
+	           ST   = 10'b0000100000,
+	           LD   = 10'b0001000000,
+	           RDW  = 10'b0010000000,
+	           WB   = 10'b0100000000,
+	           MUL  = 10'b1000000000; // add MUL state
+	reg [9:0] current_state, next_state;
+	
+	// ...
+	
+	/* decode logic */
+	wire is_MUL       = (is_RType & func7[0]);
+	
+	// ...
+	
+	/* FSM section 2 */
+	EX:
+				if (is_BType)
+					next_state = IF;
+				else if (is_SType)
+					next_state = ST;
+				else if (is_I_LDType)
+					next_state = LD;
+				else if (is_MUL)        // add this case
+					next_state = MUL;
+				else
+					next_state = WB;
+	MUL:
+				if (mul_ready)
+					next_state = WB;
+				else
+					next_state = MUL;
+\end{lstlisting}
+
+实例化乘法运算模块并正确连接信号
+
+\begin{lstlisting}[language=Verilog]
+    // mul
+	mul mul (.clk(clk), .rst(rst), .a(mul_a), .b(mul_b), .valid(mul_valid),
+	        .ready(mul_ready), .result(mul_result));
+	
+    assign mul_valid       = (current_state == MUL) ? 1'b1 : 1'b0;
+    assign mul_a = src1;
+    assign mul_b = src2;
+    assign RF_wdata =  is_I_LDType            ? readData_processed
+	                : (is_I_JType | is_JType) ? snpc
+	                : is_LUI                  ? sext_imm
+	                : is_shiftType            ? shiftOut
+	                : is_MUL                  ? mulResultReg[31:0] // add this case
+	                :                           aluOut;
+
+\end{lstlisting}
+
+这样，在接收到MUL指令后，CPU进入MUL状态由mul单元完成运算，之后进入WB阶段将结果写回寄存器，符合指令手册的要求。
+
+\section{卷积与池化的软件算法，硬件加速器与性能计数器}
+
+\noindent
+$\bullet$
+\textbf{应用滑动窗口的卷积与池化算法}。
+
+\begin{lstlisting}[language=C]
+void convolution()
+{
+    // ...
+	//TODO: Please add your implementation here
+	
+	/* calculate sizes */
+	short FilterSize = 1 + mul(weight_size.d2, weight_size.d3); // bias + 5 * 5 weights
+	short InputSize = mul(input_fm_w, input_fm_h);
+	short OutputSize = mul(conv_size.d2, conv_size.d3);
+
+	for (short ch = 0; ch < conv_size.d1; ch++) { // for each output channel
+		short bias = *weight;
+		short *filter = weight + 1;
+
+		short *channel_out = out; // output to this channel
+
+		for (short r = 0; r < conv_out_h; r++) { // for each output row
+			short r_base = mul(r, (short)stride) - pad; // base row in input
+			
+			for (short c = 0; c < conv_out_w; c++) { // for each output col
+				short c_base = mul(c, (short)stride) - pad; // base col in input
+				
+				int result = 0; // store in in to avoid overflow
+
+				short *filter_ptr = filter;
+				short *input_ch = in;
+				for (short n = 0; n < rd_size.d1; n++) { // for each input channel
+					for (short i = 0; i < weight_size.d2; i++) { // filter rows
+						short h_pos = r_base + i;
+
+						for (short j = 0; j < weight_size.d3; j++) { // filter cols
+							short w_pos = c_base + j;
+							
+							if (h_pos >= 0 && h_pos < input_fm_h && w_pos >= 0 && w_pos < input_fm_w) { // not in padding
+								short input_val = input_ch[mul(h_pos, (short)input_fm_w) + w_pos];
+								result += mul(input_val, *filter_ptr);
+							}
+							filter_ptr++; // since weight array is consecutive, inc directly
+						}
+					}
+					input_ch += InputSize; // next input channel
+				}
+
+				// store result
+				channel_out[mul(r, (short)conv_size.d3) + c] = (short)(result >> FRAC_BIT) + bias;
+			}
+		}
+
+		weight += FilterSize; // next filter
+		out += OutputSize; // next output channel
+	}
+}
+
+void pooling()
+{
+	// ...
+	//TODO: Please add your implementation here
+	
+	// calculate size
+	short InputSize = mul(input_fm_h, input_fm_w);
+	short OutputSize = mul(pool_out_h, pool_out_w);
+
+	short *ch_input = out;
+	short *ch_output = out;
+
+	for (short ch = 0; ch < conv_size.d1; ch++) { // for each channel
+		for (short r = 0; r < pool_out_h; r++) { // for each output row
+			short r_base = mul(r, (short)stride) - pad;
+
+			for (short c = 0; c < pool_out_w; c++) { // for each output col
+				short c_base = mul(c, (short)stride) - pad;
+
+				short max_val = 0x8000; // min short value
+
+				for (short i = 0; i < KERN_ATTR_POOL_KERN_SIZE; i++) { // pool rows
+					short h_pos = r_base + i;
+
+					for (short j = 0; j < KERN_ATTR_POOL_KERN_SIZE; j++) { // pool cols
+						short w_pos = c_base + j;
+
+						if (h_pos >= 0 && h_pos < input_fm_h && w_pos >= 0 && w_pos < input_fm_w) { // not in padding
+							short val = ch_input[mul(h_pos, (short)input_fm_w) + w_pos];
+							if (val > max_val) max_val = val;
+						}
+					}
+				}
+				// write output
+				ch_output[mul(r, (short)pool_out_w) + c] = max_val;
+			}
+		}
+		// next channel
+		ch_input += InputSize;
+		ch_output += OutputSize;
+	}
+}
+\end{lstlisting}
+
+\noindent
+$\bullet$
+\textbf{硬件加速器}。
+
+\begin{lstlisting}[language=C]
+void launch_hw_accel()
+{
+    // ...
+	//TODO: Please add your implementation here
+
+	*gpio_start = 1;
+	while (*(gpio_done) != 1);
+	*gpio_start = 0;
+}
+\end{lstlisting}
+
+\noindent
+$\bullet$
+\textbf{性能计算器设计}。
+
+\begin{lstlisting}[language=C]
+int main()
+{
+	Result res;
+	res.msec = 0;
+
+	bench_prepare(&res);
+    
+    // ...
+    
+    bench_done(&res);
+    printf("========== Performance Counter ==========\n");
+    printf("Clock cycle count: %d\n", res.msec);
+    printf("=========================================\n");
+    
+    // ...
+}
+\end{lstlisting}
+
+统计运行需要的时钟周期数，作为性能标准
+
+\section{不同实现方法的性能差异}
+
+性能计数器的统计结果如下：
+
+1. 使用硬件加速器：6,832,623 cycle
+
+2. 使用乘法单元：564,597,712 cycle
+
+3. 用加减法代替乘法：4,176,521,680 cycle
+
+可以看出实现MUL指令之后，软件可以在编译时使用该指令而无需用加减法算法替代乘法，从而获得一个数量级的性能提升。
+
+若是进一步实现硬件加速器，则可以直接获得两个数量级的性能提升！
+
+这充分说明了在特定应用场景下，有针对性地进行硬件优化的重要性。
+
+
+\section{实验过程中遇到的问题、对问题的思考过程及解决方法}
+
+\noindent
+$\bullet$
+\textbf{RTL设计问题}。
+
+在编写乘法单元时犯了两个低级错误：一是移位使用了逻辑移位而非算术移位，二是最后结果的赋值应选取最高的64位，但写成了从次高位开始的64位。
+
+由于本次实验框架没有提供行为仿真，导致在debug的时候效率低下。于是我自己撰写了用于测试乘法运算单元的c++测试用例，并用本地的verilator进行了行为仿真（因为我刚好自己也在用verilator进行一些项目，所以有一定基础）。
+
+\begin{lstlisting}[language=C]
+#include <verilated.h>
+#include <verilated_vcd_c.h>
+#include "Vmul.h"
+#include <iostream>
+#include <cstdlib>
+#include <limits>
+
+class MulTester {
+    Vmul* dut;
+    VerilatedVcdC* tfp;
+    vluint64_t sim_time;
+    bool trace_en;
+    
+public:
+    MulTester(bool trace = false) : trace_en(trace), sim_time(0) {
+        dut = new Vmul;
+        Verilated::traceEverOn(trace);
+        if (trace) {
+            tfp = new VerilatedVcdC;
+            dut->trace(tfp, 99);
+            tfp->open("mul_waves.vcd");
+        }
+        reset();
+    }
+
+    ~MulTester() {
+        if (trace_en) tfp->close();
+        delete dut;
+    }
+
+    void reset() {
+        dut->rst = 1;
+        tick();
+        dut->rst = 0;
+        tick();
+    }
+
+    void tick() {
+        dut->clk = 0;
+        dut->eval();
+        if (trace_en) tfp->dump(sim_time++);
+        
+        dut->clk = 1;
+        dut->eval();
+        if (trace_en) tfp->dump(sim_time++);
+    }
+
+    uint64_t multiply(uint32_t a, uint32_t b) {
+        dut->a = a;
+        dut->b = b;
+        dut->valid = 1;
+        
+        while (!dut->ready) {
+            tick();
+        }
+        uint64_t res = dut->result;
+        
+        dut->valid = 0;
+        tick(); // Return to WAIT state
+        
+        return res;
+    }
+};
+
+int main(int argc, char** argv) {
+    Verilated::commandArgs(argc, argv);
+    MulTester tb(true); // Enable waveform tracing
+    
+    // Test vectors: {a, b}
+    std::vector<std::pair<int32_t, int32_t>> tests = {
+        {0, 0},
+        {1, 1},
+        {5, 7},
+        {-2, 4},
+        {3, -5},
+        {-4, -6},
+        {0x7FFFFFFF, 1},   // MAX_INT32
+        {0x80000000, 1},   // MIN_INT32
+        {0x12345678, 0x9ABCDEF0}
+    };
+    
+    for (auto& test : tests) {
+        int32_t a = test.first;
+        int32_t b = test.second;
+        int64_t expected = static_cast<int64_t>(a) * static_cast<int64_t>(b);
+        uint64_t actual = tb.multiply(static_cast<uint32_t>(a), 
+                                     static_cast<uint32_t>(b));
+        
+        std::cout << "Test: " << a << " * " << b << " = " 
+                  << "Expected: " << expected << " (" << std::hex << expected
+                  << "), Got: " << actual << " (" << std::hex << actual << ")\n";
+                  
+        if (static_cast<int64_t>(actual) != expected) {
+            std::cerr << "MISMATCH!\n";
+            return 1;
+        }
+    }
+    
+    std::cout << "All tests passed!\n";
+    return 0;
+}
+\end{lstlisting}
+
+有着这些简易的基础设施，我很快定位了上述问题并修改通过了测试。这两个文件还可以在之后的其他选做实验中修改复用，辅助调试。
+
+\noindent
+$\bullet$
+\textbf{软件算法问题}。
+
+最开始我使用指针运算实现卷积与池化算法，但是发现在多重循环地情况下，指针算法并不简洁，同时也给调试增加了不小难度。因此，我重写了这些算法，通过记录偏移和使用mul(short a, short b)的方式记录内存访问位置，通过了测试。
+
+
+\section{对讲义中思考题（如有）的理解和回答}
+
+1. \textbf{如何避免出现乘法溢出或者精度损失？}
+
+原数据通过short类型的定点数存放，低10位为小数部分，高6位为整数（含符号）。
+通过乘法，将产生32位的数据，高12位为整数，低20位位小数。则使用\textbf{整型变量暂存}结果，便可以保证数据不溢出，且保留全部的精度。
+
+运算结束后，需要将结果转化为原定点数类型存储起来的时候，可以首先将数据右移10位(只保留10位小数)，然后截断为short类型。
+
+\section{收获与感想}
+
+通过本次实验，我理解了硬件乘法单元的设计原理与实现方法。在实现支持RISC-V乘法指令的Booth算法过程中，不仅掌握了补码乘法的硬件优化策略，更通过状态机设计体会到指令执行流程的精细控制。调试阶段自行搭建Verilator测试环境的经历，使我认识到完备验证体系对硬件开发的重要性，这种自主解决问题的能力对工程实践具有显著意义。
+
+在卷积与池化算法的软件实现中，笔者通过优化内存访问模式和多维数据组织，显著提升了代码可维护性。尤为关键的是，三种实现方式的性能对比数据（硬件加速器/乘法指令/加减法替代）带来了深刻启发：专用硬件设计能在特定场景下带来数量级的性能飞跃，这为未来软硬件协同优化提供了实证依据。
+
+实验过程中遇到的算术移位错误和结果截取偏差，促使我更严谨地审视数据通路中的位宽处理。而性能计数器的引入，则培养了量化评估优化效果的系统性思维。
+
+\section{实验所耗时间}
+
+\newcommand{\labTime}{9} % 请在这里填写实验所耗时间（单位：小时）
+
+在课后，你花费了大约\underline{\makebox[5em][c]{\labTime}}小时完成此次实验。
+
+\end{document}

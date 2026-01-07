@@ -1,0 +1,270 @@
+% 这是中国科学院大学计算机科学与技术专业《计算机组成原理（研讨课）》使用的实验报告 Latex 模板
+% 本模板与 2024 年 2 月 Jun-xiong Ji 完成, 更改自由 Shing-Ho Lin 和 Jun-Xiong Ji 于 2022 年 9 月共同完成的基础物理实验模板
+% 如有任何问题, 请联系: jijunxoing21@mails.ucas.ac.cn
+% This is the LaTeX template for report of Experiment of Computer Organization and Design courses, based on its provided Word template. 
+% This template is completed on Febrary 2024, based on the joint collabration of Shing-Ho Lin and Junxiong Ji in September 2022. 
+% Adding numerous pictures and equations leads to unsatisfying experience in Word. Therefore LaTeX is better. 
+% Feel free to contact me via: jijunxoing21@mails.ucas.ac.cn
+
+\documentclass[11pt]{article}
+
+\usepackage[a4paper]{geometry}
+\geometry{left=2.0cm,right=2.0cm,top=2.5cm,bottom=2.5cm}
+
+\usepackage{ctex} % 支持中文的LaTeX宏包
+\usepackage{amsmath,amsfonts,graphicx,subfigure,amssymb,bm,amsthm,mathrsfs,mathtools,breqn} % 数学公式和符号的宏包集合
+\usepackage{algorithm,algorithmicx} % 算法和伪代码
+\usepackage[noend]{algpseudocode} % 算法和伪代码
+\usepackage{fancyhdr} % 自定义页眉页脚
+\usepackage[framemethod=TikZ]{mdframed} % 创建带边框的框架
+\usepackage{fontspec} % 字体设置
+\usepackage{adjustbox} % 调整盒子大小
+\usepackage{fontsize} % 设置字体大小
+\usepackage{tikz,xcolor} % 绘制图形和使用颜色
+\usepackage{multicol} % 多栏排版
+\usepackage{multirow} % 表格中合并单元格
+\usepackage{pdfpages} % 插入PDF文件
+\usepackage{listings} % 在文档中插入源代码
+\usepackage{wrapfig} % 文字绕排图片
+\usepackage{bigstrut,multirow,rotating} % 支持在表格中使用特殊命令
+\usepackage{booktabs} % 创建美观的表格
+\usepackage{circuitikz} % 绘制电路图
+\usepackage{zhnumber} % 中文序号（用于标题）
+\usepackage{tabularx} % 表格折行
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{
+  frame=tb,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  framerule=1pt,
+  rulecolor=\color{gray!35},
+  backgroundcolor=\color{gray!5},
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3,
+}
+
+% 轻松引用, 可以用\cref{}指令直接引用, 自动加前缀. 
+% 例: 图片label为fig:1
+% \cref{fig:1} => Figure.1
+% \ref{fig:1}  => 1
+\usepackage[capitalize]{cleveref}
+% \crefname{section}{Sec.}{Secs.}
+\Crefname{section}{Section}{Sections}
+\Crefname{table}{Table}{Tables}
+\crefname{table}{Table.}{Tabs.}
+
+% \setmainfont{Palatino Linotype.ttf}
+% \setCJKmainfont{SimHei.ttf}
+% \setCJKsansfont{Songti.ttf}
+% \setCJKmonofont{SimSun.ttf}
+\punctstyle{kaiming}
+% 偏好的几个字体, 可以根据需要自行加入字体ttf文件并调用
+
+\renewcommand{\emph}[1]{\begin{kaishu}#1\end{kaishu}}
+
+% 对 section 等环境的序号使用中文
+\renewcommand \thesection{\zhnum{section}、}
+\renewcommand \thesubsection{\arabic{section}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%改这里可以修改实验报告表头的信息
+\newcommand{\name}{张钧玮}
+\newcommand{\studentNum}{2023K8009908003}
+\newcommand{\major}{计算机科学与技术}
+\newcommand{\labNum}{4}
+\newcommand{\labName}{定制RISC-V功能型处理器设计}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\input{tex_file/head.tex}
+
+\section{逻辑电路结构与仿真波形的截图及说明}
+
+FSM的基本结构和prj3相似，只有部分指令的PC更新时间按照讲义要求进行了改动。下面主要解释prj4的RISC-V处理器与MIPS处理器设计的不同之处，主要集中于译码电路与PC更新电路。
+
+\noindent
+$\bullet$
+\textbf{译码信号设计}
+
+% \begin{figure}[H]
+%   \centering
+%   \begin{minipage}[b]{0.3\linewidth}
+%     \includegraphics[width=\linewidth]{fig/prj3/FSM_encoding.png}
+%     \caption{FSM状态编码}
+%     \label{fig:FSM_encoding}
+%   \end{minipage}%
+%   \hspace{5pt}
+%   \begin{minipage}[b]{0.4\linewidth}
+%     \includegraphics[width=\linewidth]{fig/prj3/FSM_section1.png}
+%     \caption{FSM第一部分}
+%     \label{fig:FSM_section1}
+%   \end{minipage}
+% \end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj4/decode.png}
+  \caption{译码信号设计}
+  \label{fig:FSM_section2}
+\end{figure}
+
+\noindent
+关键设计点说明：
+
+译码信号主要分为三层：第一层对指令直接译码，拆分指令的不同字段。第二层根据指令的opcode字段对指令类型进行译码。第三则则在第二层的基础上进一步归纳有共性的指令类型。
+
+此外，译码部分含包含了其他的一些信号：
+
+1. 立即数生成器：根据指令类型提取并拼接立即数，\textbf{有符号扩展}，并正确移位。
+
+2. \texttt{src1}与\texttt{src2}信号：存储\texttt{rs1 rs2}寄存器地址中对应的操作数。实际上属于寄存器堆的读取信号，但是由于该操作十分普遍，所以归类到译码信号
+
+3. \texttt{aluoff}信号，用于存储ALU输出信号中低两位对应的偏移量，用于存储器的读写操作。
+
+\vspace{1ex}
+
+\noindent
+$\bullet$
+\textbf{PC更新电路设计}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj4/pc_update.png}
+  \caption{PC更新电路设计}
+\end{figure}
+
+\noindent
+关键设计点说明：
+
+执行一条指令的时候，所产生的PC可以分为如下几类：
+
+1. 当前PC：当前执行的指令对应的PC
+
+2. 静态下一PC(Static Next PC, snpc): 当前的PC值加4
+
+3. 分支下一PC(Branch Next PC, bnpc)：B/J类型指令要跳转到的PC
+
+4. 动态下一PC(dynamic Next PC,dnpc)：下一条指令的实际PC，从snpc和bnpc中选择
+
+与MIPS指令集不同，RISC-V中分支与跳转指令的偏移量加在当前PC之上，而MIPS的偏移量加在snpc之上，这导致了处理器在PC更新电路上的架构差异。
+
+在目前的设计中，我使用\texttt{reg [31:0] pcReg}存储当前PC，使用\texttt{reg [31:0] nextPc}存储dnpc。\texttt{pcReg}在IF阶段之后与指令寄存器一同更新，用于当前指令的译码；\texttt{nextPc}在EX阶段之后更新，用于将下一条指令的地址输出给存储器。具体的数据通路为：ID阶段，当前PC与指令一起流入，这时根据译码结果产生snpc和bnpc，并进一步根据ALU运算得到的分支条件结果产生dnpc，最终在EX阶段结束后更新给\texttt{nextPc}，从PC的输入到dnpc信号的产生在两个时钟周期之内(ID与EX阶段)完成。
+
+这样的设计是权衡\textbf{硬件复杂度}与\textbf{信号延时}的结果，具体原因见下面一节。
+
+\section{实验过程中遇到的问题、对问题的思考过程及解决方法}
+
+\noindent
+$\bullet$
+\textbf{RTL设计问题}。
+
+\noindent
+1. \textbf{B与J类指令中的硬件资源分配问题}
+
+在上一部分中提到了PC更新电路的设计，这里解释如此设计的原因。
+
+部分J类指令要在EX阶段结束时更新dnpc(定义见上节)，之后需要在WB阶段写入snpc，这要求dnpc与snpc的信号需要分开保存。这是符合RISC-V的设计，因为RISC-V指令集要求PC偏移量加在当前PC上，而非snpc上，所以需要从当前PC分支出两根信号线，分别产生snpc和bnpc，再选择产生dnpc。再MIPS中，因为PC偏移量加在snpc上，所以取指后可以统一为PC加4，只使用一条信号通路。
+
+B类指令要求首先判断\texttt{src1 src2}的关系，然后计算dnpc并进行选择。但是由于关系判断与dnpc的计算全部都需要算数运算，所以产生了硬件资源分配的问题。有两种解决方案：
+
+\textbf{方案1：}
+B指令需要在EX阶段之后更新\texttt{nextPc}，有两个时钟周期(ID和EX)的时间。因此可以在ID周期计算分支条件并寄存，在EX周期计算dnpc。但是这样做的弊端明显——需要考虑信号延迟。分支条件的计算涉及读取寄存器与ALU运算，可能的延迟较长，这会拉长ID周期的时间。而ID周期是每一条指令都需要经过的，所以会较大地影响CPU的整体效率。
+
+\textbf{方案2：}
+为dnpc与snpc设计专用加法器，一旦取值就立刻开始计算，同时ALU只需要负责计算分支条件。这样做可以减小信号延迟，相比于方案一有速度优势，但是会增加一部分电路复杂度。不过，在计算dnpc与snpc的时候只需进行加法操作，甚至snpc只需要加4，所以对于硬件复杂度的提升有限。
+
+综合上述考量，最后暂时选择了第二种方案。不过可能有考虑不周的情况，之后如有必要，可以回来修改。
+
+\noindent
+2. \textbf{ALUOp编码优化问题}
+
+ALUop部分电路复杂，可能成为瓶颈，考虑优化。首先将RISC-V和MIPS中指令对于ALUOp的编码和当前ALU接受的编码进行比较，如图\ref{fig:aluop_table}。其中绿色为两类指令集的理想ALUOp编码，橙色为当前ALUOp编码。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj4/aluop_table.png}
+  \caption{RISC-V与MIPS的ALUOp编码表}
+  \label{fig:aluop_table}
+\end{figure}
+
+从图中可见，当前的ALUOp编码并不高效。有两种解决方案：一是在当前的基础上优化，二是修改ALUOp编码。
+
+若采用方案一，则最好的优化方式是列出\textbf{真值表}进行数学层面的化简。但是这样做有着明显的弊端：不具有可读性，可维护性和可拓展性。对于基本成型的项目，用这种方法是完全可行的，但是我当前的项目还在快速发展，未来可能需要增加指令或者进行调试，这种方法会对开发带来不便。因此，这里采用第二种方案。下图是优化前后的电路对比：
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj4/aluop_before.png}
+  \caption{优化前}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj4/aluop_after.png}
+  \caption{优化后}
+\end{figure}
+
+\noindent
+3. \textbf{shiftOp编码优化问题}
+
+在优化的过程中，我发现将\texttt{shiftOp}修改为\texttt{\{func3[2], ~\{func3[0] ^ func7[5]\}\}}后，所产生的信号恰好为之前实验中要求的shiftOp编码，于是就完成了化简。这是因为shiftOp的两位编码中的每一位都有明确的含义：第一位表示方向，第零位表示有无符号。因此容易找出规律
+
+\noindent
+$\bullet$
+\textbf{FPGA加速仿真调试的使用情况}。
+
+本次实验未使用FPGA加速仿真调试
+
+\section{RISC-V与MIPS指令集的比较和性能分析}
+
+1. RISC-V与MIPS指令集的核心区别在于RISC-V是一个\textbf{模块化}的指令集。芯片设计者可以按照需求进行裁剪，而被裁出的指令可以通过编译器用基础指令等效实现。如此设计可以扩展RISC-V的使用场景，降低低端芯片的面积和功耗。
+
+2. RISC-V的基础ISA中没有非对齐访问指令(如\texttt{lwl lwr swl swr})，简化了译码逻辑，从而简化了硬件实现。但有时在代码移植的时候需要支持对不对齐访存的支持，此时可以考虑让普通的访存指令支持不对齐访问，而无需像MIPS一样设置专用的指令。
+
+3. RISC-V中的指令编码更加清晰，需要特殊处理的指令数量少，因此减小了数据通路中的延迟，可以提高时钟频率，从而提高执行速度。
+
+4. 从软件的角度出发，比较各个microbench的指令数量得到：
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=10cm]{fig/prj4/benchmark_count.png}
+  \caption{RISC-V与MIPS软件负载指令数量对比}
+\end{figure}
+
+由此可见虽然二者同为精简指令集，但是RISC-V指令集编写的软件的指令数量总体上比MIPS要小，因此运行更快。但是这与编译器的质量也有关系，因此仅供参考。
+
+\section{对讲义中思考题（如有）的理解和回答}
+
+1. \textbf{能否设计出通用于MIPS和RISC-V的高效ALUOp编码？}
+
+从图\ref{fig:aluop_table}中可以看出，两套指令集对应的最直接的编码方式并不相同，因此没有通用的直接编码。虽然可以从每一位的含义上找到一定的规律(如第几位表示算数运算，第几位表示逻辑运算，第几位表示有无符号等等)，但是这样构造出来的电路并不十分简洁。
+
+解答这个问题的关键在于如何理解“高效”。如果高效指的是最直接的对应，那我相信答案是没有的，但是如果高效指的是不至于成为电路设计的瓶颈，那么由于ALUOp只有三位宽，对于任意一种编码，通过真值表进行优化应该都可以达到这个标准。
+
+\section{收获与感想}
+
+本次实验通过定制RISC-V处理器设计，加深了我对精简指令集架构的理解。RISC-V的模块化设计哲学（如基础整数指令集与可裁剪扩展）让我深刻体会到硬件灵活性的价值：通过剔除非核心功能（如乘除单元和非对齐访问支持），能显著优化低端芯片的面积与功耗。在实现PC更新电路时，我深入理解了RISC-V分支指令的独特机制——偏移量基于当前PC而非下一条指令地址，这促使我设计了双通路（snpc与bnpc）和动态选择逻辑（dnpc），在平衡时序与资源消耗的过程中强化了对数据通路关键路径的掌控能力。
+
+另一收获是编码优化实践。针对ALUOp和shiftOp的编码重构，让我从机械的真值表分析转向语义驱动优化（例如分离移位方向与符号位逻辑），既提升了电路效率，也认识到硬件设计需在数学优化与工程可维护性间寻求平衡。
+
+
+\section{实验所耗时间}
+
+\newcommand{\labTime}{6} % 请在这里填写实验所耗时间（单位：小时）
+
+在课后，你花费了大约\underline{\makebox[5em][c]{\labTime}}小时完成此次实验。
+
+\end{document}

@@ -1,0 +1,537 @@
+% 这是中国科学院大学计算机科学与技术专业《计算机组成原理（研讨课）》使用的实验报告 Latex 模板
+% 本模板与 2024 年 2 月 Jun-xiong Ji 完成, 更改自由 Shing-Ho Lin 和 Jun-Xiong Ji 于 2022 年 9 月共同完成的基础物理实验模板
+% 如有任何问题, 请联系: jijunxoing21@mails.ucas.ac.cn
+% This is the LaTeX template for report of Experiment of Computer Organization and Design courses, based on its provided Word template. 
+% This template is completed on Febrary 2024, based on the joint collabration of Shing-Ho Lin and Junxiong Ji in September 2022. 
+% Adding numerous pictures and equations leads to unsatisfying experience in Word. Therefore LaTeX is better. 
+% Feel free to contact me via: jijunxoing21@mails.ucas.ac.cn
+
+\documentclass[11pt]{article}
+
+\usepackage[a4paper]{geometry}
+\geometry{left=2.0cm,right=2.0cm,top=2.5cm,bottom=2.5cm}
+
+\usepackage{ctex} % 支持中文的LaTeX宏包
+\usepackage{amsmath,amsfonts,graphicx,subfigure,amssymb,bm,amsthm,mathrsfs,mathtools,breqn} % 数学公式和符号的宏包集合
+\usepackage{algorithm,algorithmicx} % 算法和伪代码
+\usepackage[noend]{algpseudocode} % 算法和伪代码
+\usepackage{fancyhdr} % 自定义页眉页脚
+\usepackage[framemethod=TikZ]{mdframed} % 创建带边框的框架
+\usepackage{fontspec} % 字体设置
+\usepackage{adjustbox} % 调整盒子大小
+\usepackage{fontsize} % 设置字体大小
+\usepackage{tikz,xcolor} % 绘制图形和使用颜色
+\usepackage{multicol} % 多栏排版
+\usepackage{multirow} % 表格中合并单元格
+\usepackage{pdfpages} % 插入PDF文件
+\usepackage{listings} % 在文档中插入源代码
+\usepackage{wrapfig} % 文字绕排图片
+\usepackage{bigstrut,multirow,rotating} % 支持在表格中使用特殊命令
+\usepackage{booktabs} % 创建美观的表格
+\usepackage{circuitikz} % 绘制电路图
+\usepackage{zhnumber} % 中文序号（用于标题）
+\usepackage{tabularx} % 表格折行
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{
+  frame=tb,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  framerule=1pt,
+  rulecolor=\color{gray!35},
+  backgroundcolor=\color{gray!5},
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3,
+}
+
+% 轻松引用, 可以用\cref{}指令直接引用, 自动加前缀. 
+% 例: 图片label为fig:1
+% \cref{fig:1} => Figure.1
+% \ref{fig:1}  => 1
+\usepackage[capitalize]{cleveref}
+% \crefname{section}{Sec.}{Secs.}
+\Crefname{section}{Section}{Sections}
+\Crefname{table}{Table}{Tables}
+\crefname{table}{Table.}{Tabs.}
+
+% \setmainfont{Palatino Linotype.ttf}
+% \setCJKmainfont{SimHei.ttf}
+% \setCJKsansfont{Songti.ttf}
+% \setCJKmonofont{SimSun.ttf}
+\punctstyle{kaiming}
+% 偏好的几个字体, 可以根据需要自行加入字体ttf文件并调用
+
+\renewcommand{\emph}[1]{\begin{kaishu}#1\end{kaishu}}
+
+% 对 section 等环境的序号使用中文
+\renewcommand \thesection{\zhnum{section}、}
+\renewcommand \thesubsection{\arabic{section}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%改这里可以修改实验报告表头的信息
+\newcommand{\name}{张钧玮}
+\newcommand{\studentNum}{2023K8009908003}
+\newcommand{\major}{计算机科学与技术}
+\newcommand{\labNum}{5.4}
+\newcommand{\labName}{DMA引擎和中断处理}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\input{tex_file/head.tex}
+
+\section{DMA引擎的设计}
+
+\noindent
+$\bullet$
+\textbf{状态及状态转移设计}
+
+\begin{lstlisting}[language=Verilog] % 指定语言
+	/* state encodings */
+	localparam RD_IDLE = 3'b001,
+	           RD_REQ  = 3'b010,
+	           RD      = 3'b100,
+	           WR_IDLE = 3'b001,
+	           WR_REQ  = 3'b010,
+	           WR      = 3'b100;
+	reg [2:0] rdCurrentState, rdNextState;
+	reg [2:0] wrCurrentState, wrNextState;
+    
+    /* FSM for read */
+	always @(posedge clk) begin
+		if (rst)
+			rdCurrentState <= RD_IDLE;
+		else
+			rdCurrentState <= rdNextState;
+	end
+	always @(*) begin
+		case (rdCurrentState)
+			RD_IDLE: begin
+				if (en & (wrCurrentState == WR_IDLE) & headPtrReg != tailPtrReg)
+					rdNextState = RD_REQ;
+				else
+					rdNextState = RD_IDLE;
+			end
+			RD_REQ: begin
+				if (rd_req_ready & rd_req_valid)
+					rdNextState = RD;
+				else if (rdBurstCnt == nrBurst) // finished reading whole dma-size
+					rdNextState = RD_IDLE;
+				else
+					rdNextState = RD_REQ;
+			end
+			RD: begin
+				if (rd_valid & rd_ready & rd_last)
+					rdNextState = RD_REQ;
+				else
+					rdNextState = RD;
+			end
+			default:
+				rdNextState = RD_IDLE;
+		endcase
+	end
+
+	/* FSM for write */
+	always @(posedge clk) begin
+		if (rst)
+			wrCurrentState <= WR_IDLE;
+		else
+			wrCurrentState <= wrNextState;
+	end
+	always @(*) begin
+		case (wrCurrentState)
+			WR_IDLE: begin
+				if (en & headPtrReg != tailPtrReg & !fifo_is_empty) // no need to wait for reading to end, start as long as fifo non-empty
+					wrNextState = WR_REQ;
+				else
+					wrNextState = WR_IDLE;
+			end
+			WR_REQ: begin
+				if (wr_req_ready & wr_req_valid)
+					wrNextState = WR;
+				else if (wrBurstCnt == nrBurst)
+					wrNextState = WR_IDLE;
+				else
+					wrNextState = WR_REQ;
+			end
+			WR: begin
+				if (wr_valid & wr_ready & wr_last)
+					wrNextState = WR_REQ;
+				else
+					wrNextState = WR;
+			end
+			default:
+				wrNextState = WR_IDLE;
+		endcase
+	end
+\end{lstlisting}
+
+DMA引擎由两个独立的状态机分别控制读和写。其中读引擎在DMA启动(en位为1)且尾指针落后于头指针的时候开始从buffer0读取数据。通过burst传输的方式将一整个子buffer的数据(dma\_size)分多次读取到FIFO中。
+
+在每次burst传输读取数据到FIFO后，写引擎随即启动，从FIFO中读出数据并将数据写到buffer1中的对应位置。
+
+\noindent
+$\bullet$
+\textbf{与CPU的交互}
+
+\begin{lstlisting}[language=Verilog]
+    /* control registers */
+	reg [31:0] srcBaseReg;
+	reg [31:0] destBaseReg;
+	reg [31:0] tailPtrReg;
+	reg [31:0] headPtrReg;
+	reg [31:0] dmaSizeReg;
+	reg [31:0] ctrlStatReg;
+	// parse the ctrlStatReg
+	assign intr = ctrlStatReg[31];
+	wire   en   = ctrlStatReg[0];
+    
+    /* interact with CPU */
+	always @(posedge clk) begin
+		if (rst) begin
+			srcBaseReg  <= 32'b0;
+			destBaseReg <= 32'b0;
+			tailPtrReg  <= 32'b0;
+			headPtrReg  <= 32'b0;
+			dmaSizeReg  <= 32'b0;
+			ctrlStatReg <= 32'b0;
+		end else if (en & transmitFinish) begin // send intr to CPU
+			tailPtrReg <= tailPtrReg + dmaSizeReg;
+			ctrlStatReg[31] <= 1'b1;
+		end else begin // receive control from CPU
+			if (reg_wr_en[0])  srcBaseReg  <= reg_wr_data;
+			if (reg_wr_en[1])  destBaseReg <= reg_wr_data;
+			if (reg_wr_en[2])  tailPtrReg  <= reg_wr_data;
+			if (reg_wr_en[3])  headPtrReg  <= reg_wr_data;
+			if (reg_wr_en[4])  dmaSizeReg  <= reg_wr_data;
+			if (reg_wr_en[5])  ctrlStatReg <= reg_wr_data;
+		end
+	end
+\end{lstlisting}
+
+DMA引擎通过一些状态寄存器记录当前的工作状态，这些寄存器为CPU可见的。CPU可以随时将数据写入这些寄存器，用于更新头指针，交代dma\_size等等。
+
+在每次一整个子buffer的数据传输完毕后，DMA引擎需要拉高INTR位的信号通知CPU，触发中断。
+
+\noindent
+$\bullet$
+\textbf{读写次数与长度控制}
+
+\begin{lstlisting}[language=Verilog]
+    /* burst count control */
+	reg  [31:0] rdBurstCnt, wrBurstCnt; // keep track of progress
+	// each burst transmits 32 bytes, encoded by the last 5 bits
+	wire [31:0] nrFullBurst = {5'b0, dmaSizeReg[31:5]};
+	wire [31:0] nrPartBurst = {31'b0, |dmaSizeReg[4:0]}; // 0 or 1
+	wire [31:0] nrBurst     = nrFullBurst + nrPartBurst;
+	// rdBurstCnt and wrBurstCnt counts from 0 to nrBurst-1, and finished while
+	// they are equal
+	wire transmitFinish = (wrCurrentState == WR_REQ) & (wrBurstCnt == nrBurst) & (rdBurstCnt == nrBurst);
+	// update rdBurstCnt and wrBurstCnt
+	always @(posedge clk) begin
+		if (rst)
+			rdBurstCnt <= 32'b0;
+		else if (rdCurrentState == RD_IDLE & wrCurrentState == WR_IDLE)
+			rdBurstCnt <= 32'b0;
+		else begin // accumulate
+			if (rdCurrentState == RD & rd_valid & rd_ready & rd_last)
+				rdBurstCnt <= rdBurstCnt + 32'b1;
+			else
+				rdBurstCnt <= rdBurstCnt;
+		end
+	end
+	always @(posedge clk) begin
+		if (rst)
+			wrBurstCnt <= 32'b0;
+		else if (rdCurrentState == RD_IDLE & wrCurrentState == WR_IDLE)
+			wrBurstCnt <= 32'b0;
+		else begin // accumulate
+			if (wrCurrentState == WR & wr_ready & wr_valid & wr_last)
+				wrBurstCnt <= wrBurstCnt + 32'b1;
+			else
+				wrBurstCnt <= wrBurstCnt;
+		end
+	end
+
+	/* burst length control */
+	wire [4:0] nrFullWords = {2'b0, dmaSizeReg[4:2]};
+	wire [4:0] nrFracWords = {4'b0, |dmaSizeReg[1:0]};
+	wire [4:0] lastBurstLen = nrFullWords + nrFracWords - 5'b1; // unit: words
+	assign rd_req_len = (nrPartBurst[0] & (rdBurstCnt == (nrBurst - 32'b1))) ? lastBurstLen : 5'd7;
+	assign wr_req_len = (nrPartBurst[0] & (wrBurstCnt == (nrBurst - 32'b1))) ? lastBurstLen : 5'd7;
+\end{lstlisting}
+
+一个子buffer的传输任务需要分为多次burst传输，因此需要控制传输的次数及每次传输的长度。
+
+每次执行传输任务时根据dma\_size计算得到需要的burst传输次数，并在传输时分别维护一个读写次数计数器，从0开始，每次burst传输后计数器加1，当计数器的数值等于需要的传输次数时，传输终止。
+
+除了最后一次burst传输，其他的burst传输长度均为最长长度32字节。最后一次传输的长度根据dma\_size的32字节偏移(后5位)计算得到。
+
+\noindent
+$\bullet$
+\textbf{内存与FIFO数据读写控制}
+
+\begin{lstlisting}[language=Verilog]
+    /* read request */
+	assign rd_req_valid = (rdCurrentState == RD_REQ) & ~fifo_is_full & (rdBurstCnt != nrBurst);
+	reg [31:0] readAddrReg;
+	always @(posedge clk) begin
+		if (rdCurrentState == RD_IDLE & wrCurrentState == WR_IDLE & headPtrReg != tailPtrReg) // init addr after IDLE
+			readAddrReg <= srcBaseReg + tailPtrReg;
+		else if ((rdCurrentState == RD) & rd_ready & rd_valid & rd_last) begin // update addr after each burst
+			if (rdBurstCnt == (nrBurst - 32'b1)) // the last burst
+				readAddrReg <= readAddrReg + {27'b0, dmaSizeReg[4:0]};
+			else
+				readAddrReg <= readAddrReg + 32'd32;
+		end
+	end
+	assign rd_req_addr = readAddrReg;
+
+	/* read rsp */
+	assign rd_ready = (rdCurrentState == RD) & ~fifo_is_full;
+	// store the data to FIFO
+	assign fifo_wen = rd_ready & rd_valid;
+	assign fifo_wdata = rd_rdata;
+
+	/* write request */
+	assign wr_req_valid = (wrCurrentState == WR_REQ) & ~fifo_is_empty & (wrBurstCnt != nrBurst);
+	reg [31:0] writeAddrReg;
+	always @(posedge clk) begin
+		if (rdCurrentState == RD_IDLE & wrCurrentState == WR_IDLE & headPtrReg != tailPtrReg) // init addr after IDLE
+			writeAddrReg <= destBaseReg + tailPtrReg;
+		else if ((wrCurrentState == WR) & wr_ready & wr_valid & wr_last) begin // update addr after each burst
+			if (wrBurstCnt == (nrBurst - 32'd1))
+				writeAddrReg <= writeAddrReg + {27'b0, dmaSizeReg[4:0]};
+			else
+				writeAddrReg <= writeAddrReg + 32'd32;
+		end
+	end
+	assign wr_req_addr = writeAddrReg;
+
+	/* write rsp */
+	// read data from FIFO, data will return in the next clk cycle!
+	assign fifo_rden = (wrCurrentState == WR) & ~fifo_is_empty & wr_ready;
+
+	reg wrValidReg; // delay one clk cycle
+	always @(posedge clk) begin
+		wrValidReg <= fifo_rden;
+	end
+	assign wr_valid = wrValidReg;
+
+	assign wr_data = fifo_rdata; // FIFO will hold the data, so no need for registration
+
+	// generate last signal
+	reg [7:0] lastGenerator;
+	always @(posedge clk) begin
+		if (wr_req_ready & wr_req_valid) // init lastGenerator when entering WR state
+			lastGenerator <= (8'b1 << (wr_req_len + 1));
+		else if (fifo_rden) // shift whenever fifo is read
+			lastGenerator <= {1'b0, lastGenerator[7:1]};
+		else
+			lastGenerator <= lastGenerator;
+	end
+	assign wr_last = lastGenerator[0];
+\end{lstlisting}
+
+在一次读burst传输中，DMA引擎首先向内存发送读请求，然后按burst传输的方式接受数据并将其存入FIFO中。
+
+随后在写burst传输中，DMA引擎向内存发出写请求，然后按burst传输的方式从FIFO中读出数据并发送给内存。期间需要自己维护一个shifter，用于产生last信号。
+
+\section{支持中断处理的MIPS CPU设计}
+
+在原先的基础上增加INTR状态编码与相应的状态转移
+
+\begin{lstlisting}[language=Verilog]
+	localparam INIT = 10'b0000000001,
+	           IF   = 10'b0000000010,
+	           IW   = 10'b0000000100,
+	           ID   = 10'b0000001000,
+	           EX   = 10'b0000010000,
+	           ST   = 10'b0000100000,
+	           WB   = 10'b0001000000,
+	           LD   = 10'b0010000000,
+	           RDW  = 10'b0100000000,
+	           INTR = 10'b1000000000;
+    
+    // ...
+    
+    wire is_ERET         = opcode == 6'b010000 & func == 6'b011000;
+    
+    // ...
+    
+    IF: begin
+			if (passedIntr)
+				next_state = INTR;
+			else if (Inst_Req_Ready)
+				next_state = IW;
+			else
+				next_state = IF;
+		end
+	EX: begin
+				if (is_REGIMMType | is_IBranchType | is_j | is_ERET)
+					next_state = IF;
+		// ...
+	INTR: begin
+		next_state = IF;
+	end
+
+		
+	// ...
+	
+	assign Inst_Req_Valid  = (current_state == IF & ~passedIntr)           ? 1'b1 : 1'b0;
+\end{lstlisting}
+
+在IF状态下，如果接收到中断信号，则进入INTR状态。
+
+在EX阶段，如果当前指令位ERET，则从中断中返回。
+
+在INTR状态下：保存当前PC到EPC，然后更新PC到中断程序入口，退出时恢复
+
+\begin{lstlisting}[language=Verilog]
+    /* interruption manage */
+	reg [31:0] EPC;
+	always @(posedge clk) begin
+		if (rst)
+			EPC <= 32'b0;
+		else if (current_state == INTR)
+			EPC <= pcReg; // store current PC
+		else
+			EPC <= EPC;
+	end
+
+    // in PC update logic
+    else if (current_state == INTR)
+		pcReg <= 32'h100; // entrance of intr program
+	else if (current_state == EX & is_ERET)
+		pcReg <= EPC; // restore EPC to PC
+	// ...
+
+\end{lstlisting}
+
+在中断程序中，需要屏蔽其他的中断信号：
+
+\begin{lstlisting}[language=Verilog]
+    // interupt
+	reg blockIntr;
+	wire passedIntr = intr & (~blockIntr);
+
+    /* interruption blocking */
+	always @(posedge clk) begin
+		if (rst)
+			blockIntr <= 1'b0;
+		else if (current_state == INTR)
+			blockIntr <= 1'b1;
+		else if (current_state == EX & is_ERET)
+			blockIntr <= 1'b0;
+		else
+			blockIntr <= blockIntr;
+	end
+\end{lstlisting}
+
+\section{中断汇编程序设计}
+
+\begin{lstlisting}[language=Asm]
+# reset INTR bit of ctrl_stat to 0
+	la $k0, 0x60020000    # dma_mmio base addr (given in P04)
+	lw $k0, 0x14($k0)     # load ctrl_stat to k0, with offset 0x14
+	li $k1, 0x7fffffff
+	and $k0, $k1, $k0     # set INTR bit to 0
+	la $k1, 0x60020000
+	sw $k0, 0x14($k1)     # store ctrl_stat back
+
+	# calculate new_tail_ptr - old_tail_ptr
+	la $k1, 0x60020000
+	lw $k1, 0x8($k1)      # load new_tail_ptr to k1
+	la $k0, last_tail_ptr
+	lw $k0, 0($k0)        # load last_tail_ptr to k0
+	sub $k0, $k1, $k0     # save new - old to k0
+
+	# decrease dma_buf_stat by (new - old) / dma_size
+	b $TestCondition
+	nop
+$Loop:
+	lw $k1, 0x10($0)        # load dma_buf_stat to k1
+	addi $k1, $k1, -1     # dma_buf_stat--
+	sw $k1, 0x10($0)      # save dma_buf_stat back
+
+	la $k1, 0x60020000
+	lw $k1, 0x10($k1)     # load dma_size to k1
+	sub $k0, $k0, $k1     # subtract dma_size from new - old
+
+$TestCondition:
+	bgtz $k0, $Loop
+	nop
+
+	# save last_tail_ptr for future use
+	la $k0, last_tail_ptr
+	la $k1, 0x60020000
+	lw $k1, 0x08($k1)
+	sw $k1, 0($k0)
+
+	# return with a eret
+	eret
+\end{lstlisting}
+
+中断程序首先相应中断，即向ctrl\_stat中的INTR信号置0。
+
+然后根据DMA更新的tail\_ptr和上一次的tail\_ptrb比较得出在上一次中断间DMA搬运了多少个dma\_size大小的数据快，并减到全局变量dma\_buf\_stat上。
+
+最后，程序将当前的tail\_ptr保存留作下一次使用，然后返回。
+
+\section{不同实现方法的性能差异}
+
+在mover.c文件中添加程序计数器统计程序运行的时钟周期数，得到如下结果：
+
+$\bullet$ 使用DMA时：消耗76075576周期
+
+$\bullet$ 仅使用软件时：消耗188079554周期
+
+由此可见，使用硬件处理数据搬运获得了2.5倍的性能提升
+
+
+\section{实验过程中遇到的问题、对问题的思考过程及解决方法}
+
+\noindent
+$\bullet$
+\textbf{RTL设计问题}。
+
+1. 在最初的engine\_core设计中，在向内存发送写数据时，由于写数据需要从FIFO中读出，且FIFO是同步读(即拉高fifo\_rden后，数据会在下一个时钟周期有效)，于是我在下个时钟周期将wr\_valid信号拉高，从而将数据送出。
+
+但这样做的问题是写一个时钟周期的wr\_ready信号不一定拉高，如果wr\_valid信号持续这一个时钟周期，则有可能导致无法成功握手，造成数据流失。因此，需要在wr\_ready信号为0的时候将wr\_valid信号寄存，直至成功握手。
+
+2. 在最初的engine\_core设计中，我将用于产生last信号的shifter寄存器设置成了8位，但是在我的实现中，这个寄存器需要九位位宽。这就导致了last信号在移位后被阶段丢失，从而使器件陷入死循环，最后提示custom\_cpu running time out报错。在修改位宽为9位后，通过了测试
+
+总体而言，本次实验较为顺利。这是因为我吸取了上次dnn实验的教训，优先完成所有器件的设计，确保顾及每一处细节之后再开始编写代码。
+
+
+\section{对讲义中思考题（如有）的理解和回答}
+
+本次实验没有思考题
+
+\section{收获与感想}
+
+通过本次实验入理解了DMA引擎的工作原理。在DMA引擎的设计过程中，通过双状态机（读/写）的独立控制机制，实现了数据在内存与FIFO之间的高效搬运。状态机设计需严格遵循握手协议，尤其需关注rd\_req\_ready、rd\_valid等信号的时序协调，避免死锁或数据丢失。调试过程中发现，last信号生成逻辑的位宽设计错误曾导致状态机陷入死循环，这一问题的解决强化了对时序逻辑细节的重视。
+
+在中断处理扩展的CPU设计中，新增INTR状态并引入EPC寄存器保存断点地址，实现了中断响应与返回（ERET指令）的完整流程。关键点在于中断屏蔽机制的设计：通过blockIntr信号确保中断程序执行期间不被重复打断。这一过程加深了对异常处理硬件支持的理解，尤其是程序计数器与特权寄存器协同工作的原理。
+
+性能对比实验验证了硬件加速的显著优势。DMA传输相比纯软件搬运效率提升约2.5倍（周期数从188M降至76M），凸显了卸载CPU负载的实际价值。
+
+\section{实验所耗时间}
+
+\newcommand{\labTime}{8} % 请在这里填写实验所耗时间（单位：小时）
+
+在课后，你花费了大约\underline{\makebox[5em][c]{\labTime}}小时完成此次实验。
+
+\end{document}

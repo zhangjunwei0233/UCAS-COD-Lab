@@ -1,0 +1,197 @@
+% 这是中国科学院大学计算机科学与技术专业《计算机组成原理（研讨课）》使用的实验报告 Latex 模板
+% 本模板与 2024 年 2 月 Jun-xiong Ji 完成, 更改自由 Shing-Ho Lin 和 Jun-Xiong Ji 于 2022 年 9 月共同完成的基础物理实验模板
+% 如有任何问题, 请联系: jijunxoing21@mails.ucas.ac.cn
+% This is the LaTeX template for report of Experiment of Computer Organization and Design courses, based on its provided Word template. 
+% This template is completed on Febrary 2024, based on the joint collabration of Shing-Ho Lin and Junxiong Ji in September 2022. 
+% Adding numerous pictures and equations leads to unsatisfying experience in Word. Therefore LaTeX is better. 
+% Feel free to contact me via: jijunxoing21@mails.ucas.ac.cn
+
+\documentclass[11pt]{article}
+
+\usepackage[a4paper]{geometry}
+\geometry{left=2.0cm,right=2.0cm,top=2.5cm,bottom=2.5cm}
+
+\usepackage{ctex} % 支持中文的LaTeX宏包
+\usepackage{amsmath,amsfonts,graphicx,subfigure,amssymb,bm,amsthm,mathrsfs,mathtools,breqn} % 数学公式和符号的宏包集合
+\usepackage{algorithm,algorithmicx} % 算法和伪代码
+\usepackage[noend]{algpseudocode} % 算法和伪代码
+\usepackage{fancyhdr} % 自定义页眉页脚
+\usepackage[framemethod=TikZ]{mdframed} % 创建带边框的框架
+\usepackage{fontspec} % 字体设置
+\usepackage{adjustbox} % 调整盒子大小
+\usepackage{fontsize} % 设置字体大小
+\usepackage{tikz,xcolor} % 绘制图形和使用颜色
+\usepackage{multicol} % 多栏排版
+\usepackage{multirow} % 表格中合并单元格
+\usepackage{pdfpages} % 插入PDF文件
+\usepackage{listings} % 在文档中插入源代码
+\usepackage{wrapfig} % 文字绕排图片
+\usepackage{bigstrut,multirow,rotating} % 支持在表格中使用特殊命令
+\usepackage{booktabs} % 创建美观的表格
+\usepackage{circuitikz} % 绘制电路图
+\usepackage{zhnumber} % 中文序号（用于标题）
+\usepackage{tabularx} % 表格折行
+
+\definecolor{dkgreen}{rgb}{0,0.6,0}
+\definecolor{gray}{rgb}{0.5,0.5,0.5}
+\definecolor{mauve}{rgb}{0.58,0,0.82}
+\lstset{
+  frame=tb,
+  aboveskip=3mm,
+  belowskip=3mm,
+  showstringspaces=false,
+  columns=flexible,
+  framerule=1pt,
+  rulecolor=\color{gray!35},
+  backgroundcolor=\color{gray!5},
+  basicstyle={\small\ttfamily},
+  numbers=none,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{dkgreen},
+  stringstyle=\color{mauve},
+  breaklines=true,
+  breakatwhitespace=true,
+  tabsize=3,
+}
+
+% 轻松引用, 可以用\cref{}指令直接引用, 自动加前缀. 
+% 例: 图片label为fig:1
+% \cref{fig:1} => Figure.1
+% \ref{fig:1}  => 1
+\usepackage[capitalize]{cleveref}
+% \crefname{section}{Sec.}{Secs.}
+\Crefname{section}{Section}{Sections}
+\Crefname{table}{Table}{Tables}
+\crefname{table}{Table.}{Tabs.}
+
+% \setmainfont{Palatino Linotype.ttf}
+% \setCJKmainfont{SimHei.ttf}
+% \setCJKsansfont{Songti.ttf}
+% \setCJKmonofont{SimSun.ttf}
+\punctstyle{kaiming}
+% 偏好的几个字体, 可以根据需要自行加入字体ttf文件并调用
+
+\renewcommand{\emph}[1]{\begin{kaishu}#1\end{kaishu}}
+
+% 对 section 等环境的序号使用中文
+\renewcommand \thesection{\zhnum{section}、}
+\renewcommand \thesubsection{\arabic{section}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%改这里可以修改实验报告表头的信息
+\newcommand{\name}{张钧玮}
+\newcommand{\studentNum}{2023K8009908003}
+\newcommand{\major}{计算机科学与技术}
+\newcommand{\labNum}{1}
+\newcommand{\labName}{基本功能部件——寄存器堆和算术逻辑单元}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\input{tex_file/head.tex}
+
+\section{逻辑电路结构与仿真波形的截图及说明}
+
+\noindent
+$\bullet$
+\textbf{寄存器堆设计}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=14cm]{fig/regfile_code.png}
+  \caption{寄存器堆代码}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=8cm]{fig/regfile_circuit.png}
+  \caption{寄存器堆电路示意图}
+\end{figure}
+
+关键设计点说明：
+
+1.通过时序逻辑实现写操作，只在clk信号上升沿更新寄存器堆内容，从而实现同步写；通过组合逻辑实现读操作，从而实现异步读。
+
+2.组合逻辑块C1在waddr != 0且wen == 1的时候才输出高电平，保证了只在enable信号有效的时候可以向寄存器堆写，并且禁止向0地址位的寄存器写入数据。
+
+3.组合逻辑块C2通\textbf{过一元约简运算和连接操作}：在raddr不为0时生成32'hffffffff，在raddr为0时生成32'h00000000，与选择器的输出进行按位与后再连接到输出端，从而保证了访问地址0时，返回的数据始终是0。\textbf{与三目运算符等行为级描述相比，这样的实现方式只需要少量的逻辑门，从而达到了简化电路的效果}
+
+\vspace{1ex}
+
+\noindent
+$\bullet$
+\textbf{ALU设计}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=14cm]{fig/alu_code.png}
+  \caption{ALU代码}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=8cm]{fig/alu_circuit.png}
+  \caption{ALU电路示意图}
+\end{figure}
+
+关键设计点说明：
+
+1. \textbf{全部的代码使用组合逻辑编写，且未出现任何行为级描述。}
+
+2.有符号数的加减法，无符号数的加减法是\textbf{通过同一套加法逻辑实现}的。因为\textbf{当且仅当ALUop的最高位为1时，电路进行减法运算（减法和比较操作都通过减法实现），故将ALUop[2]引出为单独的减法指示信号}。组合逻辑块C1根据该信号预先将数据B进行处理（即当该信号为1时将B按位取反），同时将该信号作为CarryIn输入ADD/SUB模块，从而达到对B取补码的效果。至于为何不能在C1中就对B进行+1操作，以及这样会不会产生什么后果，请看下一部分的分析。
+
+3. 组合逻辑块C2通过对Result信号进行\textbf{一元约简操作}获得Zero信号的输出，\textbf{省去了讲义中的比较逻辑电路，优化了电路}
+
+4. \textbf{最后的选择器通过类似于掩码操作的方式实现}，每种可能的输出按位与上\{`DATA\textunderscore WIDTH\{(ALUop == 对应的op码)\}\}后再按位或起来，避免了使用行为级的always块或三目运算符。
+
+5. \textbf{最大程度地保证了代码的规范性}。如手动补全长度不足的位宽，所有的数字都指定位宽和进制等，\textbf{经过本地verilator的检查并未出现任何warning}。
+
+\section{实验过程中遇到的问题、对问题的思考过程及解决方法}
+
+\noindent
+$\bullet$
+\textbf{寄存器堆设计问题}。
+
+寄存器堆的设计中并未遇到问题
+
+\vspace{1ex}
+
+\noindent
+$\bullet$
+\textbf{ALU设计问题}。
+
+1. \textbf{Overflow信号的判断}
+
+Overflow信号只在有符号数运算的时候有意义，这里采用两位输入符号位和一位输出符号位的判断方法。由于该逻辑电路本质上只执行加法操作（关注A和Modified\textunderscore B时），所以只有当输入的符号位同为1或0的时候可能发生溢出，这时如果输出的符号位与输入的符号位不同，则证明发生了溢出。
+
+综上，溢出的判断逻辑为：(A[31] == Modified\textunderscore B[31]) \&\&  (ADD[31] != A[31])
+
+2. \textbf{Carry信号的判断}
+
+CarryOut信号只在无符号数运算的时候有意义，可以通过运算中最高位输出的Carry信号判断。在执行无符号数加法的时候，如果最高位产生Carry信号，则说明产生进位；减法运算则刚好相反，如果最高位没有产生Carry信号，则说明发生借位。
+
+综上，CarryOut信号的判断逻辑为：carry \^ is\textunderscore sub
+
+3. \textbf{对B取补码的时候+1操作的时机问题}
+
+\textbf{如果在C1块中就进行+1操作可能会产生问题}：比如DATALEN=4时，考虑有符号减法运算中减数B为最小的负数-8=1000的情况，如1-(-8)=0001-1000。若在ADD/SUB中+1：0001+0111+1=1001，产生溢出信号；若在C1中就+1：0001+1000=1001, 不产生溢出信号。很明显，1-(-8)=9>7，应当产生溢出，所以前者的处理是正确的。
+
+这是因为先前的溢出判断有一个前提：符号位为1的数字表示负数。但是这里由于在4位补码表示范围中的-8的相反数+8并不在4位补码的表示范围，导致在通过取反+1的方式求+8的补码时出现了高位为1的正数。由于这是特例，只在减去补码表示范围内的最小负数时会发生，因此通过在相加阶段再+1即可解决。
+
+但是减法溢出判断依赖于-B的补码符号位，如果在相加的阶段再+1， Modified\textunderscore B就不再表示-B的补码了，这会不会对其他情况的溢出判断产生影响呢？答案是不会的，因为如果少加一个1可以影响到-B的补码的符号位，那么B取反后一定是0111，也即B一定是1000，即最小的负数。也就是说少加一个1只能影响到减数是最小负数的情况，也即上面讨论的情况。
+
+此外，\textbf{如果在C1中就进行+1操作，最后在综合阶段也可能产生两个加发器，大大增加电路的复杂度}。
+
+\section{对讲义中思考题（如有）的理解和回答}
+
+本次实验没有思考题
+
+\section{实验所耗时间}
+
+\newcommand{\labTime}{2} % 请在这里填写实验所耗时间（单位：小时）
+
+在课后，你花费了大约\underline{\makebox[5em][c]{\labTime}}小时完成此次实验。
+
+\end{document}
